@@ -2,6 +2,7 @@
 -- module Main(main) where
 import Types -- TODO: organise imports
 import Data.List
+import System.IO
 import System.Posix.User
 import System.Directory
 import System.Environment
@@ -18,24 +19,20 @@ taskIdDb = (++) <$> taskDir <*> pure "id"
 
 -- | The 'main' function starts.
 main :: IO ()
--- main = fmap head' getArgs >>= action
 main = getArgs >>= action
 
 -- | 'action' returns the appropriate action
 -- | based on what it matches.
 action :: [String] -> IO () -- TODO: rewrite this, getopt for Haskell?
-action ("-h":_)   = options
 action ("-l":_)   = listTasks
 action ("-a":_)   = addTask
 action ("-d":x:_) = deleteTask (read x :: TaskID)
-action ("4":_)    = putStr ""
 action _    	  = options
 
 -- | 'options' prints the user's options.
 options :: IO ()
 options = mapM_ putStrLn 
           ["You have the following options:",
-		   "  -h  display help",
 		   "  -l  list current tasks",
 		   "  -a  add a task",
 		   "  -d  delete a task"]
@@ -87,6 +84,7 @@ newId = do
 getTime :: IO Day
 getTime = do
            putStr "Enter desired due date \"yyyy-mm-dd\" (empty for timestamp): "
+           hFlush stdout
            i <- getLine 
            if "" == i
            then getTimestamp
@@ -106,6 +104,3 @@ getDesc = putStrLn "Type a brief description of the task:" >> BC.getLine
 -- | Helper functions:
 readByteString :: Read a => BC.ByteString -> a
 readByteString = read . BC.unpack
-safeHead :: [[a]] -> [a]
-safeHead [] = []
-safeHead (x:_) = x
