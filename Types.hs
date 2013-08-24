@@ -1,5 +1,14 @@
 -- Types for the tasker program
-module Types (Task(Task), TaskID, getCurrentTime, toGregorian, utctDay, Day) where
+module Types 
+	(
+	  Task(Task)
+	, TaskID
+	-- * Exported from Data.Time
+    , getCurrentTime
+	, toGregorian
+	, utctDay
+	, Day
+	) where
 
 import Data.Time
 import qualified Data.ByteString as B
