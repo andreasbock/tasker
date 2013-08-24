@@ -1,10 +1,12 @@
 {-# OPTIONS -Wall #-}
--- module Main(main) where
-import Types -- TODO: organise imports
-import Data.List
+module Main(main) where
+
+import Types
 import System.IO
-import System.Posix.User
+import Data.List
+import Data.List.Split
 import System.Directory
+import System.Posix.User
 import System.Environment
 import Control.Applicative
 import qualified Data.ByteString as B
@@ -32,15 +34,15 @@ action _    	  = options
 -- | 'options' prints the user's options.
 options :: IO ()
 options = mapM_ putStrLn 
-          ["You have the following options:",
-		   "  -l  list current tasks",
-		   "  -a  add a task",
-		   "  -d  delete a task"]
+          ["Usage: tasker [ OPTIONS ]",
+		   "where  OPTIONS := { -l[ist]",
+		   "                    -a[dd]",
+		   "                    -d[elete]}"]
 
 -- tasksBeforeTime :: DueDate -> [Tasks]
 
 listTasks :: IO ()
-listTasks = taskDb >>= BC.readFile >>= putStrLn . BC.unpack
+listTasks = taskDb >>= BC.readFile >>= putStr . BC.unpack
 
 addTask :: IO ()
 addTask = Task <$> newId <*> getTime <*> getDesc >>= saveTask
@@ -83,13 +85,14 @@ newId = do
 -- | or simply applies a timestamp to the task.
 getTime :: IO Day
 getTime = do
-           putStr "Enter desired due date \"yyyy-mm-dd\" (empty for timestamp): "
+           putStr "Enter desired due date \"dd mm yyyy\" (empty for timestamp): "
            hFlush stdout
-           i <- getLine 
-           if "" == i
+           i <- fmap (splitOn " ") getLine
+           if [""] == i
            then getTimestamp
            else do
-				 case reads i of
+                 let date = concat $ intersperse "-"  $ reverse i
+                 case reads date of
 				   [(day,"")] -> return day
 				   _		  -> putStr "Erroneous input!" >> getTime
 
