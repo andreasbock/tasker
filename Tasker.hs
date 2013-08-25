@@ -19,17 +19,17 @@ taskDir = dir >>= createDirectoryIfMissing False >> dir
 taskDb   = (++) <$> taskDir <*> pure "tasks"
 taskIdDb = (++) <$> taskDir <*> pure "id"
 
--- | The 'main' function starts.
+-- | The 'main' function.
 main :: IO ()
 main = getArgs >>= action
 
 -- | 'action' returns the appropriate action
 -- | based on what it matches.
 action :: [String] -> IO () -- TODO: rewrite this, getopt for Haskell?
-action ("-l":_)   = listTasks
 action ("-a":_)   = addTask
 action ("-d":x:_) = deleteTask (read x :: TaskID)
-action _    	  = options
+action ("-h":_)   = options
+action _    	  = listTasks
 
 -- | 'options' prints the user's options.
 options :: IO ()
@@ -39,23 +39,21 @@ options = mapM_ putStrLn
 		   "                    -a[dd]",
 		   "                    -d[elete]}"]
 
--- tasksBeforeTime :: DueDate -> [Tasks]
+-- tasksBeforeTime :: DueDate -> [Task]
 
+-- | 'listTasks' prints the database to stdout.
 listTasks :: IO ()
 listTasks = taskDb >>= BC.readFile >>= putStr . BC.unpack
 
+-- | 'addTask' requests time and description from
+-- | stdin to append a new task to the database.
 addTask :: IO ()
-addTask = Task <$> newId <*> getTime <*> getDesc >>= saveTask
+addTask = Task <$> getDesc <*> getTime <*> newId >>= saveTask
 
 -- | 'deleteTask' takes a TaskID and deletes
 -- | the desired entry from the database.
 deleteTask :: TaskID -> IO ()
-deleteTask i = do
-			    db <- fmap (toWords . BC.lines) $ taskDb >>= BC.readFile
-			    let filtered = filter (\x -> i /= (readByteString . head) x) db
-			    let out = map BC.unwords filtered -- concat into list of tasks 
-			    writeDB out
-  where toWords = fmap BC.words
+deleteTask i = dbOperation (\entry -> (BC.pack . show) i /= head entry)
 
 -- | 'writeDB' takes a list of bytestrings and
 -- | writes them to the database.
@@ -64,6 +62,16 @@ writeDB []  = return ()
 writeDB out = writeDB' $ BC.concat $ intersperse newLine out ++ [newLine]
   where writeDB' b = taskDb >>= flip BC.writeFile b
         newLine = BC.pack "\n"
+
+-- | 'dbOperation' takes a function and
+-- | filters the database based on the predicate.
+dbOperation :: ([BC.ByteString] -> Bool) -> IO ()
+dbOperation foo = do
+					db <- fmap (toWords . BC.lines) $ taskDb >>= BC.readFile
+					let filtered = filter foo db
+					let out = map BC.unwords filtered -- concat into list of tasks 
+					writeDB out
+  where toWords = fmap BC.words
 
 -- | 'saveTask' appends a task to the database file.
 saveTask :: Task -> IO ()
@@ -83,7 +91,7 @@ newId = do
 
 -- | 'getTime' asks the user to supply a due date
 -- | or simply applies a timestamp to the task.
-getTime :: IO Day
+getTime :: IO DueDate
 getTime = do
            putStr "Enter desired due date \"dd mm yyyy\" (empty for timestamp): "
            hFlush stdout
@@ -91,13 +99,13 @@ getTime = do
            if [""] == i
            then getTimestamp
            else do
-                 let date = concat $ intersperse "-"  $ reverse i
+                 let date = intercalate "-" $ reverse i
                  case reads date of
 				   [(day,"")] -> return day
 				   _		  -> putStr "Erroneous input!" >> getTime
 
 -- | 'getTimestamp' returns the current date.
-getTimestamp :: IO Day				 
+getTimestamp :: IO DueDate				 
 getTimestamp = getCurrentTime >>= return . utctDay
 
 -- | 'getDesc' is a simple wrapper for BC.getLine.
