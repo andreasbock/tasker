@@ -3,11 +3,12 @@ module Types
 	(
 	  Task(Task)
 	, TaskID
+-- 	, DbEntry
 	-- * Exported from Data.Time
     , getCurrentTime
 	, toGregorian
 	, utctDay
-	, Day
+	, DueDate
 	) where
 
 import Data.Time
@@ -18,6 +19,6 @@ type DueDate = Day
 type Description = B.ByteString
 type TaskID = Int
 
-data Task = Task TaskID DueDate Description
+data Task = Task Description DueDate TaskID 
 instance Show Task where
-  show (Task id due desc) = show id++" "++show due ++" "++ BC.unpack desc
+  show (Task desc due id) = BC.unpack desc++" "++show due++" "++show id
