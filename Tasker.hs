@@ -9,6 +9,7 @@ import System.Directory
 import System.Posix.User
 import System.Environment
 import Control.Applicative
+import Control.Monad
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 
@@ -106,7 +107,7 @@ getTime = do
 
 -- | 'getTimestamp' returns the current date.
 getTimestamp :: IO DueDate				 
-getTimestamp = getCurrentTime >>= return . utctDay
+getTimestamp = liftM utctDay getCurrentTime
 
 -- | 'getDesc' is a simple wrapper for BC.getLine.
 getDesc :: IO B.ByteString
