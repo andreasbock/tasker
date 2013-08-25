@@ -3,7 +3,6 @@ module Types
 	(
 	  Task(Task)
 	, TaskID
--- 	, DbEntry
 	-- * Exported from Data.Time
     , getCurrentTime
 	, toGregorian
