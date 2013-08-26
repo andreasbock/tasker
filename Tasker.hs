@@ -47,8 +47,9 @@ listTasks :: IO ()
 listTasks = do
 			 tasks <- taskDb >>= BC.readFile
 			 let pretty = BC.intercalate formatting $ BC.lines tasks
-			 BC.putStr $ BC.pack "- " -- intercalate doesn't prepend
+			 putStr "- " -- intercalate doesn't prepend
 			 BC.putStr pretty
+			 putStr "\n"
   where formatting = BC.pack "\n- "
 
 -- | 'addTask' requests time and description from
