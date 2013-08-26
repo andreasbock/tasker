@@ -54,7 +54,7 @@ addTask = Task <$> getDesc <*> getTime <*> newId >>= saveTask
 -- | 'deleteTask' takes a TaskID and deletes
 -- | the desired entry from the database.
 deleteTask :: TaskID -> IO ()
-deleteTask i = dbOperation (\entry -> (BC.pack . show) i /= head entry)
+deleteTask i = dbOperation (\entry -> (BC.pack . show) i /= last entry)
 
 -- | 'writeDB' takes a list of bytestrings and
 -- | writes them to the database.
