@@ -47,16 +47,16 @@ options = mapM_ putStrLn
 -- | the user to edit and save it.
 -- editTask :: TaskID -> IO ()
 
--- | (+++) allows infix concatenation for ByteStrings.
+-- | (+++) is sugar for BC.append.
 (+++) :: BC.ByteString -> BC.ByteString -> BC.ByteString
-(+++) p q = BC.append p q
+(+++) = BC.append
 
 -- | 'listTasks' prints the database to stdout.
 listTasks :: IO ()
 listTasks = do
              tasks <- taskDb >>= BC.readFile
-             let pretty = map (\s-> "- "+++s+++"\n") $ BC.lines tasks
-             mapM_ BC.putStr pretty
+             let formatted = map (\s-> "- "+++s+++"\n") $ BC.lines tasks
+             mapM_ BC.putStr formatted
 
 -- | 'addTask' requests time and description from
 -- | stdin to append a new task to the database.
@@ -72,33 +72,31 @@ deleteTask i = dbOperation (\entry -> (BC.pack . show) i /= last entry)
 -- | writes them to the database.
 writeDB :: [BC.ByteString] -> IO ()
 writeDB []  = return ()
-writeDB out = writeDB' $ BC.intercalate ("\n") out
+writeDB out = writeDB' $ BC.intercalate "\n" out +++ "\n"
   where writeDB' b = taskDb >>= flip BC.writeFile b
 
 -- | 'dbOperation' takes a function and
 -- | filters the database based on the predicate.
 dbOperation :: ([BC.ByteString] -> Bool) -> IO ()
-dbOperation foo = do
-					db <- fmap (toWords . BC.lines) $ taskDb >>= BC.readFile
-					let filtered = filter foo db
-					let out = map BC.unwords filtered -- concat into list of tasks 
-					writeDB out
+dbOperation f = do
+				 db <- fmap (toWords . BC.lines) $ taskDb >>= BC.readFile
+				 let filtered = filter f db
+				 writeDB $ map BC.unwords filtered
   where toWords = fmap BC.words
 
 -- | 'saveTask' appends a task to the database file.
 saveTask :: Task -> IO ()
-saveTask task = do 
-				 i <- taskDb
-				 BC.appendFile i $ BC.pack $ show task ++ "\n"
+saveTask task = taskDb >>= flip BC.appendFile (byteTask +++"\n")
+  where byteTask = BC.pack $ show task
 
 -- | 'newId' returns a new TaskId number based on 
 -- | the current one in the ~/tasker/ids file.
 newId :: IO TaskID
 newId = do
-		  i <- taskIdDb >>= BC.readFile
-		  let curId = readByteString i :: Int -- get id, increment and save
- 		  taskIdDb >>= flip BC.writeFile (incrementId curId)
-		  return curId										
+		 i <- taskIdDb >>= BC.readFile
+		 let curId = readByteString i :: Int -- get id, increment and save
+ 		 taskIdDb >>= flip BC.writeFile (incrementId curId)
+		 return curId										
   where incrementId = BC.pack . show . succ
 
 -- | 'getTime' asks the user to supply a due date
