@@ -1,6 +1,7 @@
 {-# OPTIONS -Wall #-}
-module Main(main) where
+{-# LANGUAGE OverloadedStrings #-}
 
+module Main(main) where
 import Types
 import System.IO
 import Data.List
@@ -42,15 +43,20 @@ options = mapM_ putStrLn
 
 -- tasksBeforeTime :: DueDate -> [Task]
 
+-- | 'editTask' takes a TaskID and allows
+-- | the user to edit and save it.
+-- editTask :: TaskID -> IO ()
+
+-- | (+++) allows infix concatenation for ByteStrings.
+(+++) :: BC.ByteString -> BC.ByteString -> BC.ByteString
+(+++) p q = BC.append p q
+
 -- | 'listTasks' prints the database to stdout.
 listTasks :: IO ()
 listTasks = do
-			 tasks <- taskDb >>= BC.readFile
-			 let pretty = BC.intercalate formatting $ BC.lines tasks
-			 putStr "- " -- intercalate doesn't prepend
-			 BC.putStr pretty
-			 putStr "\n"
-  where formatting = BC.pack "\n- "
+             tasks <- taskDb >>= BC.readFile
+             let pretty = map (\s-> "- "+++s+++"\n") $ BC.lines tasks
+             mapM_ BC.putStr pretty
 
 -- | 'addTask' requests time and description from
 -- | stdin to append a new task to the database.
@@ -66,9 +72,8 @@ deleteTask i = dbOperation (\entry -> (BC.pack . show) i /= last entry)
 -- | writes them to the database.
 writeDB :: [BC.ByteString] -> IO ()
 writeDB []  = return ()
-writeDB out = writeDB' $ BC.concat $ intersperse newLine out ++ [newLine]
+writeDB out = writeDB' $ BC.intercalate ("\n") out
   where writeDB' b = taskDb >>= flip BC.writeFile b
-        newLine = BC.pack "\n"
 
 -- | 'dbOperation' takes a function and
 -- | filters the database based on the predicate.
